@@ -73,7 +73,11 @@ async function boot(){
   if(configured && window.supabase){
     sb = window.supabase.createClient(SUPABASE_CONFIG.url, SUPABASE_CONFIG.anon);
     const {data:{session}} = await sb.auth.getSession();
-    if(session){ await onLogin(session.user); }
+    if(session){ 
+      await onLogin(session.user);
+      // Purge stale plans on every page load (not just fresh login)
+      setTimeout(()=>{ purgeStaleTodayPlan(); }, 100);
+    }
     else showAuth();
     sb.auth.onAuthStateChange((_e,s)=>{ if(!s) showAuth(); });
   }else{
@@ -81,7 +85,11 @@ async function boot(){
     $("#configWarn").style.display="block";
     // auto-login local demo
     const email = localStorage.getItem("demo_email");
-    if(email){ await onLogin({id:"local",email}); }
+    if(email){ 
+      await onLogin({id:"local",email});
+      // Purge stale plans on every page load
+      setTimeout(()=>{ purgeStaleTodayPlan(); }, 100);
+    }
     else showAuth();
   }
   bindGlobalUI();
