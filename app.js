@@ -434,7 +434,7 @@ function recordResult(id,correct){
   STATE.seen[id]=s;
   
   // Record specialty stats
-  recordSpecialtyResult(id, correct);
+ // recordSpecialtyResult(id, correct);
   
   // wrong loop bookkeeping
   if(!correct){
