@@ -131,6 +131,7 @@ let runnerCtx = null;         // active question-runner context
 
 const $ = (s,r=document)=>r.querySelector(s);
 const $$ = (s,r=document)=>[...r.querySelectorAll(s)];
+const uniq = (arr)=>[...new Set(arr)];
 
 /* Get today's date in Riyadh timezone (UTC+3) */
 const todayStr = ()=> {
@@ -292,9 +293,10 @@ async function purgeStaleTodayPlan(){
     localStorage.setItem(localKey(), JSON.stringify(STATE));
   } else if(sb && USER){
     try{
-      await sb.from("progress").upsert({
+      const up = sb.from("progress").upsert({
         user_id: USER.id, state: STATE, updated_at: new Date().toISOString()
       });
+      await Promise.race([up, new Promise((_,rej)=>setTimeout(()=>rej(new Error("upsert timeout")),8000))]);
     }catch(e){ console.warn("purge save error", e); }
   }
 
@@ -350,9 +352,16 @@ async function loadState(){
     STATE = raw?JSON.parse(raw):freshState();
     return;
   }
-  const {data,error}=await sb.from("progress").select("state").eq("user_id",USER.id).maybeSingle();
-  if(error){ console.warn(error); }
-  STATE = (data&&data.state)?data.state:freshState();
+  try{
+    const query = sb.from("progress").select("state").eq("user_id",USER.id).maybeSingle();
+    const timeout = new Promise((_,rej)=>setTimeout(()=>rej(new Error("loadState timeout")),8000));
+    const {data,error}=await Promise.race([query,timeout]);
+    if(error){ console.warn(error); }
+    STATE = (data&&data.state)?data.state:freshState();
+  }catch(e){
+    console.warn("loadState failed, using fresh state:",e);
+    STATE = freshState();
+  }
 }
 let saveTimer=null;
 function saveState(){
@@ -731,7 +740,6 @@ function markDayDone(id){
   log.done[id] = true;
 
   saveState();
-}
 }
 /* flatten today's plan into an ordered id list (for resume / study-all) */
 function todayOrderedIds(){
@@ -1118,7 +1126,7 @@ function renderPlan(){
   const log=STATE.dayLog[plan.day]||{done:{}};
   const done=log.done||{};
   const el=$("#view-plan");
-  const allIds=plan.groups.flatMap(g=>g.items.map(q=>q.id));
+  const allIds=uniq(plan.groups.flatMap(g=>g.items.map(q=>q.id)));
   const totalQ=allIds.length;
   const doneQ=allIds.filter(id=>done[id]).length;
   const remaining=totalQ-doneQ;
@@ -1294,8 +1302,9 @@ function renderPastDaysSlider(){
     .slice(0,30);
   if(!pastDays.length) return "";
   const chips=pastDays.map(([d,log])=>{
-    const allIds=log.groups.flatMap(g=>g.itemIds||[]);
-    const doneCount=Object.keys(log.done||{}).filter(id=>allIds.includes(id)).length;
+    const allIds=uniq(log.groups.flatMap(g=>g.itemIds||[]));
+    const done=log.done||{};
+    const doneCount=allIds.filter(id=>done[id]).length;
     const total=allIds.length;
     const pct=total?Math.round(doneCount/total*100):0;
     const complete=doneCount===total&&total>0;
@@ -1316,7 +1325,7 @@ function openPastDay(d){
   const log=STATE.dayLog[d];
   if(!log||!log.groups){ toast("No plan data for that day."); return; }
   const done=log.done||{};
-  const allIds=log.groups.flatMap(g=>g.itemIds||[]);
+  const allIds=uniq(log.groups.flatMap(g=>g.itemIds||[]));
   const doneCount=allIds.filter(id=>done[id]).length;
   const total=allIds.length;
   const pct=total?Math.round(doneCount/total*100):0;
@@ -1371,14 +1380,14 @@ function openPastDay(d){
 }
 function runPastDayAll(d){
   const log=STATE.dayLog[d]; if(!log) return;
-  const ids=log.groups.flatMap(g=>g.itemIds||[]).filter(id=>QBY[id]);
+  const ids=uniq(log.groups.flatMap(g=>g.itemIds||[])).filter(id=>QBY[id]);
   runnerCtx={ids,idx:0,key:'past_'+d,answered:{},origin:"pastday",pastDay:d};
   switchView("runner"); renderRunner();
 }
 function runPastDayRemaining(d){
   const log=STATE.dayLog[d]; if(!log) return;
   const done=log.done||{};
-  const ids=log.groups.flatMap(g=>g.itemIds||[]).filter(id=>QBY[id]&&!done[id]);
+  const ids=uniq(log.groups.flatMap(g=>g.itemIds||[])).filter(id=>QBY[id]&&!done[id]);
   if(!ids.length){ toast("All questions already completed for that day!"); return; }
   runnerCtx={ids,idx:0,key:'past_'+d,answered:{},origin:"pastday",pastDay:d};
   switchView("runner"); renderRunner();
