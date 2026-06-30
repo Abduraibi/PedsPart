@@ -13,13 +13,22 @@ const SUPABASE_CONFIG = {
 const ASSET_BASE = "https://nernppmpfpmwzosutzbi.supabase.co/storage/v1/object/public/snapshots/";
 
 // Exam date stored per-user in STATE.examDate — getters used everywhere
-function getExamDate(){ return (STATE&&STATE.examDate)||"2026-07-07"; }
+function getExamDate(){
+  if(STATE&&STATE.examDate) return STATE.examDate;
+  // Fallback: 35 days from today (used only before onboarding completes)
+  const d=new Date(); d.setDate(d.getDate()+35);
+  return d.toISOString().slice(0,10);
+}
 function getFinishBy(){
   if(STATE&&STATE.finishBy) return STATE.finishBy;
   const d=new Date(getExamDate()+"T12:00:00"); d.setDate(d.getDate()-1);
   return d.toISOString().slice(0,10);
 }
-function getPlanStart(){ return (STATE&&STATE.planStart)||"2026-06-02"; }
+function getPlanStart(){
+  if(STATE&&STATE.planStart) return STATE.planStart;
+  // Fallback: today (used only before onboarding completes)
+  return todayStr();
+}
 function getTotalPlanDays(){
   if(STATE&&STATE.useFixedSchedule) return 35;
   return Math.max(1, daysBetween(getPlanStart(), getFinishBy())+1);
@@ -308,7 +317,7 @@ async function onLogin(user){
    3. Purge duplicate IDs from wrong loop
 --------------------------------------------------------------------------- */
 function migrateForFinalWeek(){
-  if(STATE._finalWeekMigrated) return;
+  if(STATE._dupProgressMigrated) return;
 
   const dupMap = {}; // old_id -> canonical_id
   QUESTIONS.forEach(q => { if(q.duplicate_of) dupMap[q.id] = q.duplicate_of; });
@@ -334,21 +343,23 @@ function migrateForFinalWeek(){
     STATE.wrongLoop[day] = STATE.wrongLoop[day].filter(id => !dupMap[id]);
   });
 
-  STATE._finalWeekMigrated = true;
+  STATE._dupProgressMigrated = true;
   saveState();
 }
 
-/* One-time: existing users (have seen questions) get the hardcoded schedule */
+/* One-time: bootstrap existing users who had progress before onboarding was added.
+   Locked to the 2026 cohort dates. Safe for new users — _existingUserMigrated
+   prevents it from ever running again, and hasSeen guard skips brand-new accounts. */
 function migrateExistingUser(){
-  if(!STATE||STATE.examDate) return; // already set
+  if(!STATE||STATE._existingUserMigrated||STATE.examDate) return;
   const hasSeen = STATE.seen && Object.keys(STATE.seen).length > 0;
   if(hasSeen){
     STATE.examDate = "2026-07-07";
     STATE.planStart = "2026-06-02";
     STATE.useFixedSchedule = true;
-    saveState();
   }
-  // brand-new users: examDate stays null → onboarding shows
+  STATE._existingUserMigrated = true;
+  saveState();
 }
 
 /* Detect and purge stale plans from previous days, then auto-build today's plan.
@@ -541,7 +552,7 @@ function showOnboarding(){
     const examD=new Date(val+'T12:00:00');
     const finD=new Date(val+'T12:00:00'); finD.setDate(finD.getDate()-1);
     const days=Math.max(1,Math.round((examD-new Date(today+'T12:00:00'))/86400000));
-    const unseen=QUESTIONS.filter(q=>!STATE.seen[q.id]).length;
+    const unseen=QUESTIONS.filter(q=>!q.duplicate_of&&!STATE.seen[q.id]).length;
     document.getElementById('onboardPreview').innerHTML=
       `<b>${days} study days</b> · finish by <b>${finD.toISOString().slice(0,10)}</b><br>
        <span style="color:var(--green)">~${Math.ceil(unseen/days)} new questions/day</span>`;
@@ -618,7 +629,7 @@ function openSettings(){
     const finD=new Date(val+'T12:00:00'); finD.setDate(finD.getDate()-1);
     const newTotal=Math.max(1,Math.round((examD-new Date(curStart+'T12:00:00'))/86400000));
     const newLeft=Math.max(1,Math.round((examD-new Date(today+'T12:00:00'))/86400000));
-    const unseen=QUESTIONS.filter(q=>!STATE.seen[q.id]).length;
+    const unseen=QUESTIONS.filter(q=>!q.duplicate_of&&!STATE.seen[q.id]).length;
     document.getElementById('settingsPreview').innerHTML=
       `${newTotal} total days · <b>${newLeft} days remaining</b> · finish by ${finD.toISOString().slice(0,10)}<br>
        <span style="color:var(--green)">~${Math.ceil(unseen/newLeft)} new questions/day</span>`;
