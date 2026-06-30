@@ -1318,7 +1318,8 @@ function priorityPill(prio){
 /* ---------- progress maths ---------- */
 function stats(){
   const total=QUESTIONS.length;
-  const seen=Object.keys(STATE.seen).length;
+  const qIds=new Set(QUESTIONS.map(q=>String(q.id)));
+  const seen=Object.keys(STATE.seen).filter(id=>qIds.has(String(id))).length;
   const mastered=QUESTIONS.filter(q=>isMastered(q.id)).length;
   const attempts=Object.values(STATE.seen).reduce((a,s)=>a+s.attempts,0);
   const corrects=Object.values(STATE.seen).reduce((a,s)=>a+s.correct,0);
