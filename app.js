@@ -290,6 +290,7 @@ async function onLogin(user){
   await loadState();
   migrateExistingUser(); // one-time: give existing users their hardcoded dates
   migrateFudulToLog();   // one-time: convert old fudulDone to fudulLog
+  migrateForFinalWeek(); // carry duplicate progress, cap SRS, clean wrong loop
   // New user with no exam date → show onboarding first
   if(!STATE.examDate){
     showOnboarding();
@@ -298,6 +299,43 @@ async function onLogin(user){
   await purgeStaleTodayPlan();
   rolloverDay();
   switchView("dashboard");
+}
+
+/* ---------------------------------------------------------------------------
+   Final-week fixes: run once after loadState
+   1. Carry progress from old duplicate IDs → canonical IDs
+   2. Cap all SRS nextDue dates to exam date
+   3. Purge duplicate IDs from wrong loop
+--------------------------------------------------------------------------- */
+function migrateForFinalWeek(){
+  if(STATE._finalWeekMigrated) return;
+
+  const dupMap = {}; // old_id -> canonical_id
+  QUESTIONS.forEach(q => { if(q.duplicate_of) dupMap[q.id] = q.duplicate_of; });
+
+  // 1. Carry progress: old → canonical (keep whichever has higher box)
+  Object.entries(dupMap).forEach(([oldId, canonId]) => {
+    const old = STATE.seen[oldId];
+    if(!old) return;
+    const canon = STATE.seen[canonId];
+    if(!canon || old.box > canon.box || (old.box === canon.box && old.correct > (canon.correct||0))){
+      STATE.seen[canonId] = {...old};
+    }
+  });
+
+  // 2. Cap SRS nextDue to exam date — nothing can be scheduled past the exam
+  const examDate = getExamDate();
+  Object.values(STATE.seen).forEach(s => {
+    if(s.nextDue && s.nextDue > examDate) s.nextDue = examDate;
+  });
+
+  // 3. Clean duplicate IDs from wrong loop
+  Object.keys(STATE.wrongLoop||{}).forEach(day => {
+    STATE.wrongLoop[day] = STATE.wrongLoop[day].filter(id => !dupMap[id]);
+  });
+
+  STATE._finalWeekMigrated = true;
+  saveState();
 }
 
 /* One-time: existing users (have seen questions) get the hardcoded schedule */
@@ -676,7 +714,8 @@ function recordResult(id,correct){
   s.lastSeen=todayStr();
   const iv=SR_INTERVALS[s.box];
   const d=new Date();d.setDate(d.getDate()+iv);
-  s.nextDue=d.toISOString().slice(0,10);
+  const nd=d.toISOString().slice(0,10);
+  s.nextDue=nd>getExamDate()?getExamDate():nd;
   STATE.seen[id]=s;
   
   // Record specialty stats
