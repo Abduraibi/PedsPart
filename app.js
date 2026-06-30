@@ -1158,6 +1158,10 @@ function effectiveStem(q){
   const e=getEdit(q.id);
   return e.stem!==undefined?e.stem:q.stem;
 }
+function effectiveOptions(q){
+  const e=getEdit(q.id);
+  return e.options||q.options;
+}
 function effectiveImage(q){
   const e=getEdit(q.id);
   // undefined = not overridden (use original), null = explicitly removed, string = custom path
@@ -1165,7 +1169,7 @@ function effectiveImage(q){
 }
 function hasEdits(id){
   const e=getEdit(id);
-  return !!(e.answer||e.stem!==undefined||e.notes||e.explanation!==undefined||e.question_image!==undefined);
+  return !!(e.answer||e.stem!==undefined||e.notes||e.explanation!==undefined||e.question_image!==undefined||e.options);
 }
 
 function openEditModal(id){
@@ -1175,14 +1179,24 @@ function openEditModal(id){
   backdrop.className='modal-backdrop';
   backdrop.id='editBackdrop';
   backdrop.onclick=function(ev){if(ev.target===backdrop)closeEditModal();};
-  const opts=q.options.map(o=>`<option value="${o.label}" ${(e.answer||q.answer).startsWith(o.label)?'selected':''}>${o.label}. ${esc(o.text)}</option>`).join('');
   const curImg=effectiveImage(q); // null or path string
+  const curOpts=effectiveOptions(q);
+  const curCorrect=(e.answer||q.answer).match(/^([A-G])/)?.[1]||'A';
   backdrop.innerHTML=`<div class="modal">
     <h2>✏️ Edit Question <span style="font-size:15px;color:var(--ink-soft);font-weight:500">${q.year} · Q${q.number}</span></h2>
 
     <div class="modal-field">
-      <label>Correct answer</label>
-      <select id="editAns">${opts}</select>
+      <label>Answer options <span style="font-size:12px;color:var(--ink-soft);font-weight:400">— check the correct one, edit text, add or remove</span></label>
+      <div id="editOptsList" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+        ${curOpts.map((o,i)=>`
+        <div class="edit-opt-row" data-idx="${i}" style="display:flex;align-items:center;gap:8px">
+          <input type="radio" name="editCorrect" value="${o.label}" ${o.label===curCorrect?'checked':''} style="flex-shrink:0;width:16px;height:16px;accent-color:var(--red,#c0392b);cursor:pointer" title="Mark as correct">
+          <span style="font-weight:700;min-width:20px;color:var(--ink-soft)">${o.label}.</span>
+          <input type="text" class="edit-opt-text" value="${esc(o.text)}" style="flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--card);color:var(--ink)">
+          <button onclick="deleteEditOption(${i})" style="flex-shrink:0;width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--ink-soft);font-size:16px;cursor:pointer;line-height:1" title="Remove option">✕</button>
+        </div>`).join('')}
+      </div>
+      <button onclick="addEditOption('${id}')" style="margin-top:10px;padding:6px 14px;font-size:13px;border:1.5px dashed var(--border);border-radius:8px;background:transparent;color:var(--ink-soft);cursor:pointer">+ Add option</button>
       <div style="font-size:12.5px;color:var(--ink-soft);margin-top:6px">Original file answer: <b>${esc(q.answer)}</b></div>
     </div>
 
@@ -1228,6 +1242,41 @@ function openEditModal(id){
   </div>`;
   document.body.appendChild(backdrop);
 }
+const OPTION_LABELS = ['A','B','C','D','E','F','G'];
+function addEditOption(qId){
+  const list = document.getElementById('editOptsList');
+  if(!list) return;
+  const rows = list.querySelectorAll('.edit-opt-row');
+  const idx = rows.length;
+  if(idx >= OPTION_LABELS.length) return;
+  const label = OPTION_LABELS[idx];
+  const row = document.createElement('div');
+  row.className = 'edit-opt-row';
+  row.dataset.idx = idx;
+  row.style.cssText = 'display:flex;align-items:center;gap:8px';
+  row.innerHTML = `
+    <input type="radio" name="editCorrect" value="${label}" style="flex-shrink:0;width:16px;height:16px;accent-color:var(--red,#c0392b);cursor:pointer" title="Mark as correct">
+    <span style="font-weight:700;min-width:20px;color:var(--ink-soft)">${label}.</span>
+    <input type="text" class="edit-opt-text" value="" placeholder="Option text…" style="flex:1;padding:7px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:14px;background:var(--card);color:var(--ink)">
+    <button onclick="deleteEditOption(${idx})" style="flex-shrink:0;width:28px;height:28px;border-radius:6px;border:1.5px solid var(--border);background:transparent;color:var(--ink-soft);font-size:16px;cursor:pointer;line-height:1" title="Remove option">✕</button>`;
+  list.appendChild(row);
+}
+function deleteEditOption(idx){
+  const list = document.getElementById('editOptsList');
+  if(!list) return;
+  const rows = [...list.querySelectorAll('.edit-opt-row')];
+  if(rows.length <= 2){ alert('A question must have at least 2 options.'); return; }
+  rows[idx]?.remove();
+  // Re-label remaining rows
+  const remaining = list.querySelectorAll('.edit-opt-row');
+  remaining.forEach((row, i) => {
+    const label = OPTION_LABELS[i];
+    row.dataset.idx = i;
+    row.querySelector('input[type=radio]').value = label;
+    row.querySelector('span').textContent = label+'.';
+    row.querySelector('button').setAttribute('onclick', `deleteEditOption(${i})`);
+  });
+}
 function previewEditImage(input, id){
   const file=input.files[0]; if(!file) return;
   const status=document.getElementById('editImgStatus');
@@ -1271,12 +1320,17 @@ async function saveEdit(id){
   const q=QBY[id]; if(!q) return;
   if(!STATE.edits) STATE.edits={};
 
-  const ansVal=document.getElementById('editAns').value;
   const stemVal=document.getElementById('editStem').value.trim();
   const notesVal=document.getElementById('editNotes').value.trim();
   const explVal=document.getElementById('editExpl').value.trim();
-  const ansLabel=ansVal;
-  const ansText=q.options.find(o=>o.label===ansLabel)?.text||'';
+  // Read edited options from DOM
+  const optRows=[...document.querySelectorAll('#editOptsList .edit-opt-row')];
+  const editedOpts=optRows.map((row,i)=>({
+    label: OPTION_LABELS[i],
+    text: row.querySelector('.edit-opt-text')?.value.trim()||''
+  })).filter(o=>o.text);
+  const ansLabel=document.querySelector('input[name="editCorrect"]:checked')?.value||'A';
+  const ansText=editedOpts.find(o=>o.label===ansLabel)?.text||q.options.find(o=>o.label===ansLabel)?.text||'';
 
   // --- Image handling ---
   let imgOverride=undefined; // undefined = no change
@@ -1312,16 +1366,20 @@ async function saveEdit(id){
     }
   }
   // --- Save state ---
+  // Check if options changed from original
+  const origOpts=q.options;
+  const optsChanged=editedOpts.length!==origOpts.length||editedOpts.some((o,i)=>o.label!==origOpts[i]?.label||o.text!==origOpts[i]?.text);
   STATE.edits[id]={
     answer: ansLabel!== (q.answer.match(/^([A-G])/)||[])[1] ? `${ansLabel}. ${ansText}` : '',
     stem: stemVal!==q.stem ? stemVal : undefined,
     notes: notesVal,
     explanation: explVal!==(q.explanation||'') ? explVal : undefined,
+    ...(optsChanged ? {options: editedOpts} : {}),
     ...(imgOverride!==undefined ? {question_image: imgOverride} : {})
   };
   // clean up empty edits
   const e=STATE.edits[id];
-  if(!e.answer && e.stem===undefined && !e.notes && e.explanation===undefined && e.question_image===undefined) delete STATE.edits[id];
+  if(!e.answer && e.stem===undefined && !e.notes && e.explanation===undefined && e.question_image===undefined && !e.options) delete STATE.edits[id];
   saveState();
   closeEditModal();
   if(document.getElementById('view-runner').classList.contains('active')) renderRunner();
@@ -2024,7 +2082,7 @@ function renderRunner(){
     ${(()=>{const img=effectiveImage(q);return img?`<div class="q-figure"><img loading="lazy" src="${ASSET_BASE+img}" alt="figure for this question"><div class="cap">Figure shown with this question (from ${q.year} source)</div></div>`:''})()}
 
     <div class="options" id="opts">
-      ${q.options.map(o=>`
+      ${effectiveOptions(q).map(o=>`
         <div class="option" data-lab="${o.label}" onclick="answer('${q.id}','${o.label}')">
           <div class="lab">${o.label}</div><div class="otext">${esc(o.text)}</div>
         </div>`).join("")}
@@ -2347,7 +2405,7 @@ function renderMockRunner(){
     <div class="q-stem">${esc(effectiveStem(q))}</div>
     ${(()=>{const img=effectiveImage(q);return img?`<div class="q-figure"><img loading="lazy" src="${ASSET_BASE+img}" alt="figure for this question"></div>`:''})()}
     <div class="options" id="mopts">
-      ${q.options.map(o=>`<div class="option ${picked===o.label?'correct':''}" data-lab="${o.label}" onclick="mockPick('${q.id}','${o.label}')">
+      ${effectiveOptions(q).map(o=>`<div class="option ${picked===o.label?'correct':''}" data-lab="${o.label}" onclick="mockPick('${q.id}','${o.label}')">
         <div class="lab">${o.label}</div><div class="otext">${esc(o.text)}</div></div>`).join("")}
     </div>
     <div class="q-foot">
