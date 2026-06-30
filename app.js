@@ -307,7 +307,7 @@ async function onLogin(user){
   }
   await purgeStaleTodayPlan();
   rolloverDay();
-  switchView("dashboard");
+  if(!restoreViewFromHash()) switchView("dashboard");
 }
 
 /* ---------------------------------------------------------------------------
@@ -672,6 +672,8 @@ function toast(msg){
   const t=$("#toast");t.textContent=msg;t.classList.add("show");
   clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove("show"),2200);
 }
+let _suppressHistoryPush = false;
+
 function switchView(v){
   if(["dashboard","plan","browse","review","mock"].includes(v)){
     $$("#nav button").forEach(b=>b.classList.toggle("active",b.dataset.view===v));
@@ -679,6 +681,9 @@ function switchView(v){
   $$(".view").forEach(s=>s.classList.remove("active"));
   $("#view-"+v).classList.add("active");
   window.scrollTo({top:0,behavior:"smooth"});
+  if(!_suppressHistoryPush){
+    history.pushState({view:v}, '', '#'+v);
+  }
   // Archive old plans (not delete) then render
   if(STATE) archiveOldPlans();
   if(v==="dashboard")renderDashboard();
@@ -687,6 +692,28 @@ function switchView(v){
   if(v==="review")renderReview();
   if(v==="mock")renderMock();
 }
+
+function restoreViewFromHash(){
+  const hash=window.location.hash.slice(1);
+  if(!hash) return false;
+  if(hash.startsWith('pastday-')){
+    const date=hash.replace('pastday-','');
+    if(STATE&&STATE.dayLog&&STATE.dayLog[date]){ openPastDay(date); return true; }
+  } else if(['dashboard','plan','browse','review','mock'].includes(hash)){
+    switchView(hash); return true;
+  }
+  return false;
+}
+
+window.addEventListener('popstate', e=>{
+  const s=e.state;
+  _suppressHistoryPush=true;
+  try{
+    if(!s||!s.view){ switchView('dashboard'); }
+    else if(s.view==='pastday'&&s.date){ openPastDay(s.date); }
+    else { switchView(s.view); }
+  } finally { _suppressHistoryPush=false; }
+});
 
 /* Archive plans from previous days — keeps them for history browsing */
 function archiveOldPlans(){
@@ -1933,6 +1960,9 @@ function openPastDay(d){
   $$(".view").forEach(s=>s.classList.remove("active"));
   el.classList.add("active");
   window.scrollTo({top:0,behavior:"smooth"});
+  if(!_suppressHistoryPush){
+    history.pushState({view:'pastday', date:d}, '', '#pastday-'+d);
+  }
 }
 function runPastDayAll(d){
   const log=STATE.dayLog[d]; if(!log) return;
