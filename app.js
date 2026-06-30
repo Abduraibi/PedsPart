@@ -827,7 +827,18 @@ function buildDayPlan(mode, targetDate){
   const specialty   = schedEntry.spec;
   const specMeta    = SPECIALTY_META[specialty] || { icon:"📋", color:"spec-gen" };
 
-  const used   = [];
+  // When rebuilding a specific past day, exclude questions already reserved
+  // in all other frozen plans (past and future) to avoid overlap.
+  const used = [];
+  if(targetDate){
+    Object.entries(STATE.dayLog||{}).forEach(([d, log]) => {
+      if(d !== day && log && log.groups){
+        log.groups.forEach(g => (g.itemIds||[]).forEach(id => {
+          if(!used.includes(id)) used.push(id);
+        }));
+      }
+    });
+  }
   const groups = [];
 
   // ── 1. Memory Review (spaced repetition due) ─────────────────────────
