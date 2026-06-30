@@ -718,7 +718,11 @@ function pendingWrongLoop(){
 --------------------------------------------------------------------------- */
 /* Get today's scheduled specialty from STUDY_SCHEDULE */
 function getTodayScheduleEntry(){
-  const dayNum = daysBetween(getPlanStart(), todayStr()) + 1;
+  return getScheduleEntryForDate(todayStr());
+}
+/* Get scheduled specialty for any specific date */
+function getScheduleEntryForDate(d){
+  const dayNum = daysBetween(getPlanStart(), d) + 1;
   const totalDays = getTotalPlanDays();
   const clamped = Math.max(1, Math.min(dayNum, totalDays));
   if(STATE && STATE.useFixedSchedule){
@@ -809,17 +813,17 @@ function pickNew(n, exclude){
 /* ---------------------------------------------------------------------------
    BUILD DAY PLAN  (specialty-aware, zone-informed)
 --------------------------------------------------------------------------- */
-function buildDayPlan(mode){
-  const day = todayStr();
+function buildDayPlan(mode, targetDate){
+  const day = targetDate || todayStr();
   const saved = STATE.dayLog[day];
 
-  // Reuse frozen plan if already built for today
+  // Reuse frozen plan if already built for this day
   if(saved && saved.groups && !saved.archived && saved.day === day){
     return _planFromSaved(saved, mode);
   }
 
-  // Determine today's specialty from the 35-day schedule
-  const schedEntry  = getTodayScheduleEntry();
+  // Determine specialty from the 35-day schedule for the target date
+  const schedEntry  = getScheduleEntryForDate(day);
   const specialty   = schedEntry.spec;
   const specMeta    = SPECIALTY_META[specialty] || { icon:"📋", color:"spec-gen" };
 
@@ -901,7 +905,7 @@ function buildDayPlan(mode){
   // Busy Day: only memory + wrongloop + first 15 spec_p1
   const busyP1Ids = specP1.slice(0, 15).map(q => q.id);
 
-  const fudul = fudulSessionForToday();
+  const fudul = (day === todayStr()) ? fudulSessionForToday() : null;
 
   // ── DEDUP: ensure no question ID appears in more than one group ───────
   const globalUsed = new Set();
@@ -1745,9 +1749,10 @@ function openPastDay(d){
         <div class="k">Day progress</div>
         <div class="v" style="font-size:26px;margin-top:4px">${doneCount}<small>/${total}</small></div>
       </div>
-      <div style="display:flex;gap:9px">
+      <div style="display:flex;gap:9px;flex-wrap:wrap">
         <button class="btn" onclick='runPastDayAll("${d}")'>Study all questions →</button>
         <button class="btn ghost" onclick='runPastDayRemaining("${d}")'>Study incomplete →</button>
+        <button class="btn ghost sm" onclick='regeneratePastDay("${d}")' title="Rebuild this day's plan from scratch">↻ New plan</button>
       </div>
     </div>
     <div class="progress-bar" style="margin-top:14px"><span style="width:${pct}%"></span></div>
@@ -1868,6 +1873,22 @@ function confirmRegenToday(){
   if(confirm("Rebuild today's plan from scratch? Your answered questions stay saved, but today's list will be regenerated and progress markers reset.")){
     regenerateToday();
   }
+}
+function regeneratePastDay(d){
+  if(!confirm("Rebuild this day's plan from scratch? Your answered questions and Fudul log stay saved, but the question list will be regenerated.")){
+    return;
+  }
+  const preservedDone = (STATE.dayLog[d]||{}).done || {};
+  const preservedFudul = (STATE.dayLog[d]||{}).fudulSnapshot || null;
+  delete STATE.dayLog[d];
+  saveState();
+  buildDayPlan(currentPlanMode||'full', d);
+  if(STATE.dayLog[d]){
+    STATE.dayLog[d].done = preservedDone;
+    if(preservedFudul) STATE.dayLog[d].fudulSnapshot = preservedFudul;
+    saveState();
+  }
+  openPastDay(d);
 }
 
 /* ============================================================================
