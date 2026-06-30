@@ -693,7 +693,7 @@ function recordResult(id,correct){
 function isMastered(id){ const s=STATE.seen[id]; return s&&s.box>=2&&s.lastResult==="correct"; }
 function dueForReview(){ // spaced-repetition due today
   const t=todayStr();
-  return QUESTIONS.filter(q=>{const s=STATE.seen[q.id];return s&&s.nextDue&&s.nextDue<=t;});
+  return QUESTIONS.filter(q=>!q.duplicate_of&&(()=>{const s=STATE.seen[q.id];return s&&s.nextDue&&s.nextDue<=t;})());
 }
 
 /* day rollover: collect yesterday's (and earlier) wrong items into the active wrong-loop */
@@ -710,7 +710,7 @@ function pendingWrongLoop(){
       if(!(s&&s.lastResult==="correct"&&s.lastSeen>day)) ids.add(id);
     });
   });
-  return [...ids].map(id=>QBY[id]).filter(Boolean);
+  return [...ids].map(id=>QBY[id]).filter(q=>q&&!q.duplicate_of);
 }
 
 /* ---------------------------------------------------------------------------
@@ -766,7 +766,7 @@ function planPool(){
   const zoneOrder = {red:0, high_yield:1, trap:2, common:3};
   const prioOrder = {P1:0, P2:1, Tier2:2, Tier1:3};
   return QUESTIONS
-    .filter(q => !isMastered(q.id))
+    .filter(q => !isMastered(q.id) && !q.duplicate_of)
     .sort((a,b) =>
       (prioOrder[a.priority]??3) - (prioOrder[b.priority]??3) ||
       (zoneOrder[a.zone]??3)     - (zoneOrder[b.zone]??3)     ||

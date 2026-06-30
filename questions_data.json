@@ -582,7 +582,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2022-5"
   },
   {
     "id": "2021-14",
@@ -670,7 +671,8 @@
     "priority": "P2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-213"
   },
   {
     "id": "2021-16",
@@ -1028,7 +1030,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-7"
   },
   {
     "id": "2021-24",
@@ -1213,7 +1216,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2023-93"
   },
   {
     "id": "2021-28",
@@ -2152,7 +2156,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-250"
   },
   {
     "id": "2021-49",
@@ -2815,7 +2820,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2022-23"
   },
   {
     "id": "2021-64",
@@ -3089,7 +3095,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2022-122"
   },
   {
     "id": "2021-70",
@@ -3853,7 +3860,8 @@
     "priority": "P2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2022-25"
   },
   {
     "id": "2021-88",
@@ -3897,7 +3905,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2022-27"
   },
   {
     "id": "2021-89",
@@ -4210,7 +4219,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-81"
   },
   {
     "id": "2021-96",
@@ -4604,7 +4614,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-90"
   },
   {
     "id": "2021-105",
@@ -5101,7 +5112,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2022-5"
   },
   {
     "id": "2022-5",
@@ -5192,7 +5204,8 @@
     "priority": "P2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-213"
   },
   {
     "id": "2022-18",
@@ -5369,7 +5382,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-20"
   },
   {
     "id": "2022-25",
@@ -7830,7 +7844,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-242"
   },
   {
     "id": "2022-89",
@@ -8697,7 +8712,8 @@
     "priority": "Tier2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-45"
   },
   {
     "id": "2022-111",
@@ -9274,7 +9290,8 @@
     "priority": "P2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2023-70"
   },
   {
     "id": "2022-125",
@@ -9989,7 +10006,8 @@
     "priority": "Tier2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-17"
   },
   {
     "id": "2023-17",
@@ -10838,7 +10856,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-39"
   },
   {
     "id": "2023-41",
@@ -11682,7 +11701,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-84"
   },
   {
     "id": "2023-61",
@@ -12308,7 +12328,8 @@
     "priority": "Tier2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-225"
   },
   {
     "id": "2023-78",
@@ -13065,7 +13086,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-66"
   },
   {
     "id": "2023-100",
@@ -13200,7 +13222,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-249"
   },
   {
     "id": "2023-109",
@@ -13690,7 +13713,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-230"
   },
   {
     "id": "2023-123",
@@ -13780,7 +13804,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2024-70"
   },
   {
     "id": "2023-125",
@@ -15067,7 +15092,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-257"
   },
   {
     "id": "2024-32",
@@ -15374,7 +15400,8 @@
     "priority": "Tier1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-258"
   },
   {
     "id": "2024-40",
@@ -16769,7 +16796,8 @@
     "priority": "P2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-1"
   },
   {
     "id": "2024-78",
@@ -16899,7 +16927,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025-249"
   },
   {
     "id": "2024-81",
@@ -17430,7 +17459,8 @@
     "priority": "P2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-77"
   },
   {
     "id": "2024-94",
@@ -19261,7 +19291,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-73"
   },
   {
     "id": "2020-2",
@@ -20738,7 +20769,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-43"
   },
   {
     "id": "2020-41",
@@ -22454,7 +22486,8 @@
     "priority": "Tier2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-22"
   },
   {
     "id": "2025-30",
@@ -22808,7 +22841,8 @@
     "priority": "Tier1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-55"
   },
   {
     "id": "2025-38",
@@ -22853,7 +22887,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-57"
   },
   {
     "id": "2025-39",
@@ -22987,7 +23022,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-59"
   },
   {
     "id": "2025-42",
@@ -23031,7 +23067,8 @@
     "priority": "Tier2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-60"
   },
   {
     "id": "2025-43",
@@ -23119,7 +23156,8 @@
     "priority": "P2",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-48"
   },
   {
     "id": "2025-45",
@@ -24098,7 +24136,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-81"
   },
   {
     "id": "2025B-84",
@@ -24231,7 +24270,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-56"
   },
   {
     "id": "2025B-1",
@@ -28924,7 +28964,8 @@
     "priority": "P1",
     "question_type": "clinical_scenario",
     "source_bank": "Master",
-    "safety_status": "safe"
+    "safety_status": "safe",
+    "duplicate_of": "2025B-90"
   },
   {
     "id": "2025-255",
