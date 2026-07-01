@@ -104,8 +104,15 @@ nav.mainnav button.active{background:var(--accent);color:#fff}
 .dot-diff{width:10px;height:10px;border-radius:50%;display:inline-block}
 .dot-diff.green{background:var(--green)} .dot-diff.yellow{background:var(--yellow)} .dot-diff.red{background:var(--red)}
 
+/* ---------- Loading screen ---------- */
+#loadingView{min-height:100vh;display:grid;place-items:center;background:var(--bg)}
+#loadingView .loading-inner{text-align:center;color:var(--ink-soft)}
+#loadingView .loading-dot{width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 5px var(--accent-bg);margin:0 auto 20px;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+#loadingView p{font-size:15px;margin-top:8px}
+
 /* ---------- Auth gate ---------- */
-#authView{min-height:100vh;display:grid;place-items:center;padding:30px}
+#authView{min-height:100vh;display:none;place-items:center;padding:30px}
 .auth-card{width:100%;max-width:430px;padding:40px 38px;text-align:center}
 .auth-card .dot{width:14px;height:14px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 5px var(--accent-bg);margin:0 auto 20px}
 .auth-card h1{font-size:30px;font-weight:600}
@@ -381,8 +388,16 @@ nav.mainnav button.active{background:var(--accent);color:#fff}
 </head>
 <body>
 
+<!-- ============ LOADING ============ -->
+<div id="loadingView">
+  <div class="loading-inner">
+    <div class="loading-dot"></div>
+    <p>Loading…</p>
+  </div>
+</div>
+
 <!-- ============ AUTH ============ -->
-<div id="authView">
+<div id="authView" style="display:none">
   <div class="card auth-card">
     <div class="dot"></div>
     <h1>Pediatrics Part 1</h1>

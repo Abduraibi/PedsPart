@@ -219,6 +219,7 @@ async function boot(){
 --------------------------------------------------------------------------- */
 let authIsSignup=false;
 function showAuth(){
+  $("#loadingView").style.display="none";
   $("#app").style.display="none";
   $("#authView").style.display="grid";
 }
@@ -291,6 +292,7 @@ function injectSettingsBtn(){
 
 async function onLogin(user){
   USER=user;
+  $("#loadingView").style.display="none";
   $("#authView").style.display="none";
   $("#app").style.display="block";
   $("#userEmail").textContent=user.email;
@@ -2026,19 +2028,45 @@ function confirmRegenToday(){
   }
 }
 function regeneratePastDay(d){
-  if(!confirm("Rebuild this day's plan from scratch? Your answered questions and Fudul log stay saved, but the question list will be regenerated.")){
+  if(!confirm("Rebuild this day's plan? Questions you've already completed stay checked off — only your unfinished questions for this day get swapped for a new set.")){
     return;
   }
-  const preservedDone = (STATE.dayLog[d]||{}).done || {};
-  const preservedFudul = (STATE.dayLog[d]||{}).fudulSnapshot || null;
+  const oldLog = STATE.dayLog[d];
+  const preservedFudul = (oldLog||{}).fudulSnapshot || null;
+
+  // Collect the actual questions already completed on this day (by identity,
+  // not by re-matching ids against a freshly regenerated list) so a rebuild
+  // can never silently uncheck work that was really done.
+  const doneIdSet = new Set(Object.keys((oldLog||{}).done||{}).filter(id=>oldLog.done[id]));
+  const doneQuestions = [];
+  if(oldLog && oldLog.groups){
+    oldLog.groups.forEach(g=>(g.itemIds||[]).forEach(id=>{
+      if(doneIdSet.has(String(id)) && QBY[id]) doneQuestions.push(QBY[id]);
+    }));
+  }
+
   delete STATE.dayLog[d];
   saveState();
   buildDayPlan(currentPlanMode||'full', d);
-  if(STATE.dayLog[d]){
-    STATE.dayLog[d].done = preservedDone;
-    if(preservedFudul) STATE.dayLog[d].fudulSnapshot = preservedFudul;
-    saveState();
+
+  if(STATE.dayLog[d] && doneQuestions.length){
+    const existingIds = new Set(STATE.dayLog[d].groups.flatMap(g=>g.itemIds||[]));
+    const carry = doneQuestions.filter(q=>!existingIds.has(q.id));
+    if(carry.length){
+      STATE.dayLog[d].groups.unshift({
+        key: "carried_done",
+        title: "✅ Completed earlier",
+        sub: `${carry.length} question${carry.length===1?'':'s'} you already finished on this day`,
+        icon: "✅",
+        specialty: null,
+        itemIds: carry.map(q=>q.id)
+      });
+    }
+    STATE.dayLog[d].done = STATE.dayLog[d].done || {};
+    doneQuestions.forEach(q=>{ STATE.dayLog[d].done[q.id] = true; });
   }
+  if(STATE.dayLog[d] && preservedFudul) STATE.dayLog[d].fudulSnapshot = preservedFudul;
+  saveState();
   openPastDay(d);
 }
 
