@@ -921,26 +921,35 @@ function buildDayPlan(mode, targetDate){
   const groups = [];
 
   // ── 1. Memory Review (spaced repetition due) ─────────────────────────
-  const sr = dueForReview(); // no cap — review all due items every day
-  sr.forEach(q => used.push(q.id));
-  if(sr.length) groups.push({
-    key: "memory",
-    title: "Memory Review",
-    sub:  "Spaced-repetition items due today — do these first",
-    icon: "🧠",
-    items: sr
-  });
+  // dueForReview()/pendingWrongLoop() are both keyed off the REAL current
+  // date, not the day being built. Only attach them when building the
+  // actual current day — otherwise rebuilding a past day (regeneratePastDay)
+  // would re-inject today's live due-list, duplicating whatever's already
+  // sitting in today's own frozen Memory Review / Wrong Loop groups. Since
+  // each day's `done` map is separate, answering a duplicate on the past
+  // day's copy would never clear it from today's copy (or vice versa).
+  if(day === todayStr()){
+    const sr = dueForReview(); // no cap — review all due items every day
+    sr.forEach(q => used.push(q.id));
+    if(sr.length) groups.push({
+      key: "memory",
+      title: "Memory Review",
+      sub:  "Spaced-repetition items due today — do these first",
+      icon: "🧠",
+      items: sr
+    });
 
-  // ── 2. Wrong Loop (prior-day mistakes) ───────────────────────────────
-  const wl = pendingWrongLoop().filter(q => !used.includes(q.id)).slice(0, 30);
-  wl.forEach(q => used.push(q.id));
-  if(wl.length) groups.push({
-    key: "wrongloop",
-    title: "Wrong Loop",
-    sub:  "Questions you missed on a previous day — master them now",
-    icon: "🔁",
-    items: wl
-  });
+    // ── 2. Wrong Loop (prior-day mistakes) ─────────────────────────────
+    const wl = pendingWrongLoop().filter(q => !used.includes(q.id)).slice(0, 30);
+    wl.forEach(q => used.push(q.id));
+    if(wl.length) groups.push({
+      key: "wrongloop",
+      title: "Wrong Loop",
+      sub:  "Questions you missed on a previous day — master them now",
+      icon: "🔁",
+      items: wl
+    });
+  }
 
   // ── 3. Specialty Focus P1 — must-master for today's domain ───────────
   const specP1 = pickSpecialtyPrio(specialty, "P1", 20, used);
