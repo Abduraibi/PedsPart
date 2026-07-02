@@ -383,10 +383,14 @@ async function purgeStaleTodayPlan(){
   // Always delete today's slot if it exists but isn't a real today plan
   if(STATE.dayLog[today] && !hasTodayPlan) delete STATE.dayLog[today];
 
-  // Save immediately — bypass debounce so this persists even if page reloads
+  // Save immediately — bypass debounce so this persists even if page reloads.
+  // Merge the latest server state in first: this runs from a per-tab midnight
+  // timer, so a backgrounded/stale tab must not blindly overwrite newer
+  // progress saved from another device (see "day flips back to not done" bug).
   if(LOCAL_MODE){
     localStorage.setItem(localKey(), JSON.stringify(STATE));
   } else if(sb && USER){
+    await mergeLatestRemoteBeforeSave(8000);
     try{
       const up = sb.from("progress").upsert({
         user_id: USER.id, state: STATE, updated_at: new Date().toISOString()
@@ -449,10 +453,12 @@ async function forceNewDay(){
   });
   // delete today's stale entry so buildDayPlan makes a fresh one
   delete STATE.dayLog[today];
-  // save synchronously to Supabase before navigating
+  // save synchronously to Supabase before navigating (merge first — same reason
+  // as purgeStaleTodayPlan: don't let a stale tab clobber another device's saves)
   if(LOCAL_MODE){
     localStorage.setItem(localKey(),JSON.stringify(STATE));
   }else if(sb&&USER){
+    await mergeLatestRemoteBeforeSave(8000);
     try{
       await sb.from("progress").upsert({
         user_id:USER.id,state:STATE,updated_at:new Date().toISOString()
@@ -484,6 +490,82 @@ async function loadState(){
     STATE = freshState();
   }
 }
+/* Union a remote copy of progress into the local STATE in place, without ever
+   discarding local data. Only touches fields that can silently regress when
+   two tabs/devices save the same user_id row (last-write-wins full overwrite):
+     - dayLog[*].done       → union of completed ids (true always wins)
+     - dayLog[*].groups     → filled in only if local's copy for that day is missing them
+     - dayLog[*].archived   → monotonic, true always wins
+     - seen[*]              → keep whichever side has more attempts logged
+     - wrongLoop[*]          → union of ids per day
+     - fudulLog[*]           → max logged count per day
+     - edits / review        → union, local wins on conflict
+   Anything not listed here (examDate, planStart, settings, etc.) is left as
+   the local tab's value, since those aren't append-only and merging them
+   blindly would be guesswork. See "day flips back to not done" bug, Jul 2026. */
+function mergeRemoteState(remote){
+  if(!remote || !STATE) return;
+
+  STATE.dayLog = STATE.dayLog || {};
+  Object.entries(remote.dayLog||{}).forEach(([day, rlog])=>{
+    if(!rlog) return;
+    const llog = STATE.dayLog[day];
+    if(!llog){ STATE.dayLog[day] = rlog; return; }
+    llog.done = llog.done || {};
+    Object.keys(rlog.done||{}).forEach(id=>{ if(rlog.done[id]) llog.done[id]=true; });
+    if((!llog.groups || !llog.groups.length) && rlog.groups && rlog.groups.length){
+      ["groups","busyP1Ids","used","specialty","schedDay","landmark","fudul"].forEach(k=>{
+        if(llog[k]===undefined) llog[k]=rlog[k];
+      });
+    }
+    if(rlog.archived) llog.archived = true;
+    if(rlog.fudulSnapshot && !llog.fudulSnapshot) llog.fudulSnapshot = rlog.fudulSnapshot;
+  });
+
+  STATE.seen = STATE.seen || {};
+  Object.entries(remote.seen||{}).forEach(([id, rs])=>{
+    if(!rs) return;
+    const ls = STATE.seen[id];
+    if(!ls || (rs.attempts||0) > (ls.attempts||0)) STATE.seen[id] = rs;
+  });
+
+  STATE.wrongLoop = STATE.wrongLoop || {};
+  Object.entries(remote.wrongLoop||{}).forEach(([day, arr])=>{
+    const set = new Set(STATE.wrongLoop[day]||[]);
+    (arr||[]).forEach(id=>set.add(id));
+    STATE.wrongLoop[day] = [...set];
+  });
+
+  STATE.fudulLog = STATE.fudulLog || {};
+  Object.entries(remote.fudulLog||{}).forEach(([day, val])=>{
+    STATE.fudulLog[day] = Math.max(STATE.fudulLog[day]||0, val||0);
+  });
+
+  STATE.edits = STATE.edits || {};
+  Object.entries(remote.edits||{}).forEach(([id, e])=>{
+    if(STATE.edits[id]===undefined) STATE.edits[id] = e;
+  });
+
+  STATE.review = STATE.review || {};
+  Object.entries(remote.review||{}).forEach(([id, v])=>{
+    if(v) STATE.review[id] = v;
+  });
+}
+
+/* Pull the latest server row and merge it into STATE before we write —
+   prevents a stale tab/device from silently erasing progress saved elsewhere.
+   Best-effort: if the fetch fails or times out, we fall back to saving local
+   state as-is (same behavior as before this fix), so it never blocks a save. */
+async function mergeLatestRemoteBeforeSave(timeoutMs){
+  if(LOCAL_MODE || !sb || !USER) return;
+  try{
+    const q = sb.from("progress").select("state").eq("user_id",USER.id).maybeSingle();
+    const t = new Promise((_,rej)=>setTimeout(()=>rej(new Error("merge fetch timeout")), timeoutMs||6000));
+    const {data,error} = await Promise.race([q,t]);
+    if(!error && data && data.state) mergeRemoteState(data.state);
+  }catch(e){ console.warn("pre-save merge fetch failed, saving local state as-is:", e); }
+}
+
 let saveTimer=null;
 let saveMaxWaitTimer=null;
 let saveInFlight=false;
@@ -495,6 +577,7 @@ async function _flushSave(){
   clearTimeout(saveTimer); saveTimer=null;
   clearTimeout(saveMaxWaitTimer); saveMaxWaitTimer=null;
   try{
+    await mergeLatestRemoteBeforeSave();
     await sb.from("progress").upsert({user_id:USER.id,state:STATE,updated_at:new Date().toISOString()});
   }catch(e){
     console.warn("saveState: upsert failed, will retry on next change:",e);
